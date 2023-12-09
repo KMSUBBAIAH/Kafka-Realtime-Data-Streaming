@@ -69,7 +69,7 @@ docker compose up -d --build
 
 #### Data Source and Streaming
 
-Utilize a WebSocket server to stream data chunks from Yelp.com to the Kafka cluster.
+> Utilize a WebSocket server to stream data chunks from Yelp.com to the Kafka cluster.
 
 #### Spark Processing
 
