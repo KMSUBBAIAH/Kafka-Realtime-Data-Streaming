@@ -1,0 +1,10 @@
+docker compose up -d --build
+
+//
+docker exec -it spark-master /bin/bash
+// inside bash 
+ls
+python jobs/streaming-socket.py
+
+// For the streaming data to kafka
+docker exec -it spark-master spark-submit --master spark://spark-master:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0 jobs/spark-streaming.py

@@ -1,0 +1,35 @@
+# Click the Variables button, above, to create your own variables.
+GET customers_review/_search
+{
+  "query": {
+    "match_all": {}  // match_all
+  }
+}
+
+GET customers_review/_search
+{
+  "query": {
+    "match_phrase": {
+      "text":"love"
+    }  // match_all
+  }
+}
+
+GET customers_review/_search
+{
+  "size":0,
+  "aggs":{
+    "group_by_feedback":{
+      "terms":{
+        "field": "feedback.keyword"
+      },
+      "aggs":{
+        "total_count":{
+          "value_count": {
+            "field": "feedback.keyword"
+          }
+        }
+      }
+    }
+  }
+}
