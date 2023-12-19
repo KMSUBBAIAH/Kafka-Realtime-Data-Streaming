@@ -21,11 +21,12 @@
   "doc": "Schema for customer reviews",
   "fields": [
     { "name": "review_id",  "type": "string" },
-    { "name": "user_id",  "type": "string" },
-    { "name": "business_id", "type": "string" },
-    { "name": "stars", "type": "float" },
-    { "name": "date", "type": "string" },
-    { "name": "text",  "type": "string" },
-    { "name": "feedback",  "type": "string" }
+    { "name": "reviewer",  "type": "string" },
+    { "name": "movie", "type": "string" },
+    { "name": "rating", "type": "string" },
+    { "name": "review_summary", "type": "string" },
+    { "name": "review_date", "type": "string" },
+    { "name": "spoiler_tag", "type": "integer" },
+    { "name": "review_detail",  "type": "string" }
   ]
 }

@@ -4,7 +4,9 @@ import os
 from openai import OpenAI
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col, when, udf
-from pyspark.sql.types import StructType, StructField, StringType, FloatType
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+from datetime import datetime
+from transformers import pipeline
 import sys
 sys.path.append('../')
 from config.config import config
@@ -14,13 +16,20 @@ import json
 def sentiment_analysis(comment) -> str:
     # Alternative, but the prediction is not accurate
     if comment:
-        url = "https://api.apilayer.com/sentiment/analysis"
-        payload = "I happen to have a few days to complete all the projects."
-        headers= { "apikey": f"{config['sentiment_analysis']['api_key']}"}
-        response = requests.request("POST", url, headers=headers, data = payload)
-        result = response.text
-        data_dict = json.loads(result)
-        return data_dict.get('sentiment')
+        # API Layer - Sentiment Analysis API
+        # url = "https://api.apilayer.com/sentiment/analysis"
+        # payload = comment
+        # headers= { "apikey": f"{config['sentiment_analysis']['api_key']}"}
+        # response = requests.request("POST", url, headers=headers, data = payload)
+        # result = response.text
+        # data_dict = json.loads(result)
+        # return data_dict.get('sentiment')
+
+        # Hugging Face Sentiment Analysis Model 
+        sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+        s = sentiment_pipeline(comment)
+        return s[0]['label']
+    
     return 'Empty'
     # if comment:
     #     client = OpenAI(api_key=config['openai']['api_key'])
@@ -45,25 +54,46 @@ def start_streaming(spark):
     while True:
         try:
             stream_df = spark.readStream.format("socket").option("host", "0.0.0.0").option("port", 9999).load()
+            # # For the yelp review dataset
+            # schema = StructType([
+            #     StructField("review_id", StringType()),
+            #     StructField("user_id", StringType()),
+            #     StructField("business_id", StringType()),
+            #     StructField("stars", FloatType()),
+            #     StructField("date", StringType()),
+            #     StructField("text", StringType())
+            # ])
 
+            # For the imdb dataset
             schema = StructType([
                 StructField("review_id", StringType()),
-                StructField("user_id", StringType()),
-                StructField("business_id", StringType()),
-                StructField("stars", FloatType()),
-                StructField("date", StringType()),
-                StructField("text", StringType())
+                StructField("reviewer", StringType()),
+                StructField("movie", StringType()),
+                StructField("rating", StringType()),
+                StructField("review_summary", StringType()),
+                StructField("review_date", StringType()),
+                StructField("spoiler_tag", IntegerType()),
+                StructField("review_detail", StringType())
             ])
 
             stream_df = stream_df.select(from_json(col('value'), schema).alias("data")).select(("data.*"))
+            # Transformation: Convert "rating" to Integer
+            stream_df = stream_df.withColumn('rating', col('rating').cast(IntegerType()))
+            # Transformation: Convert "review_date" to Timestamp
+            stream_df = stream_df.withColumn('review_date', udf(lambda date_str: datetime.strptime(date_str, '%d %B %Y'), StringType())(col('review_date')))
 
             # query = stream_df.writeStream.outputMode('append').format('console').start()
             # query.awaitTermination()   
 
             sentiment_analysis_udf = udf(sentiment_analysis, StringType())
-
+            # Yelp Dataset
+            # stream_df = stream_df.withColumn('feedback',
+            #                                  when(col('text').isNotNull(), sentiment_analysis_udf(col('text')))
+            #                                  .otherwise(None)
+            #                                  )
+            # IMDB Dataset
             stream_df = stream_df.withColumn('feedback',
-                                             when(col('text').isNotNull(), sentiment_analysis_udf(col('text')))
+                                             when(col('review_detail').isNotNull(), sentiment_analysis_udf(col('review_detail')))
                                              .otherwise(None)
                                              )
 

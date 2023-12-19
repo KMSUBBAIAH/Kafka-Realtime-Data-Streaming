@@ -44,4 +44,4 @@ def send_data_over_socket(file_path, host='spark-master', port=9999, chunk_size=
                 print("Connection closed")
 
 if __name__ == "__main__":
-    send_data_over_socket("datasets/yelp_academic_dataset_review.json")
+    send_data_over_socket("datasets/archive/part-01.json")
